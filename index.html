@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xsukax Encrypted File Container</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; background: #f6f8fa; color: #24292f; overflow: hidden; }
+.github-border { border: 1px solid #d0d7de; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.modal-content { background: #fff; border: 1px solid #d0d7de; border-radius: 6px; max-width: 600px; width: 90%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+.modal-editor { max-width: 95%; width: 1200px; max-height: 95vh; height: 85vh; resize: both; overflow: auto; min-width: 400px; min-height: 300px; }
+.notification { position: fixed; top: 20px; right: 20px; background: #fff; border: 1px solid #d0d7de; border-radius: 6px; padding: 12px 18px; z-index: 2000; min-width: 250px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; }
+@keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.notification.closing { animation: slideOut 0.3s ease; }
+@keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(400px); opacity: 0; } }
+.btn { padding: 5px 16px; border: 1px solid #d0d7de; background: #f6f8fa; color: #24292f; cursor: pointer; transition: all 0.15s; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; border-radius: 6px; font-weight: 500; }
+.btn:hover:not(:disabled) { background: #f3f4f6; border-color: #1f883d; }
+.btn-primary { background: #2da44e; color: #fff; border-color: #2da44e; }
+.btn-primary:hover:not(:disabled) { background: #2c974b; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.input-field { background: #fff; border: 1px solid #d0d7de; color: #24292f; padding: 5px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; outline: none; width: 100%; font-size: 14px; border-radius: 6px; }
+.input-field:focus { border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,0.1); }
+.textarea-field { background: #fff; border: 1px solid #d0d7de; color: #24292f; padding: 10px; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace; outline: none; width: 100%; resize: none; font-size: 12px; line-height: 1.5; border-radius: 6px; }
+.textarea-field:focus { border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,0.1); }
+.file-item { padding: 8px 12px; border-bottom: 1px solid #d8dee4; cursor: pointer; transition: background 0.1s; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.file-item:hover { background: #f6f8fa; }
+.file-item.selected { background: #ddf4ff; border-left: 3px solid #0969da; }
+.folder-item { font-weight: 600; }
+.progress-bar { width: 100%; height: 4px; background: #d0d7de; position: relative; overflow: hidden; border-radius: 2px; }
+.progress-fill { height: 100%; background: #2da44e; transition: width 0.2s; border-radius: 2px; }
+.thumbnail { width: 40px; height: 40px; object-fit: cover; border: 1px solid #d0d7de; border-radius: 3px; }
+.grid-item { border: 1px solid #d0d7de; padding: 10px; cursor: pointer; transition: all 0.1s; display: flex; flex-direction: column; align-items: center; font-size: 12px; border-radius: 6px; background: #fff; }
+.grid-item:hover { background: #f6f8fa; border-color: #0969da; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.grid-item.selected { background: #ddf4ff; border-color: #0969da; }
+.grid-thumbnail { width: 80px; height: 80px; object-fit: cover; border: 1px solid #d0d7de; border-radius: 3px; margin-bottom: 6px; }
+.scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.scrollbar::-webkit-scrollbar-track { background: #f6f8fa; }
+.scrollbar::-webkit-scrollbar-thumb { background: #d0d7de; border-radius: 4px; }
+.scrollbar::-webkit-scrollbar-thumb:hover { background: #afb8c1; }
+.dropzone { border: 2px dashed #d0d7de; padding: 40px; text-align: center; transition: all 0.2s; margin: 20px; border-radius: 6px; background: #fff; }
+.dropzone.dragover { background: #ddf4ff; border-color: #0969da; }
+.breadcrumb { padding: 10px 16px; border-bottom: 1px solid #d8dee4; display: flex; align-items: center; gap: 6px; font-size: 14px; background: #f6f8fa; }
+.breadcrumb-item { cursor: pointer; color: #0969da; transition: all 0.15s; }
+.breadcrumb-item:hover { text-decoration: underline; }
+.breadcrumb-item.active { color: #24292f; font-weight: 600; cursor: default; }
+.breadcrumb-item.active:hover { text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div id="app" class="w-full h-screen flex flex-col bg-white">
+  <div class="github-border bg-white p-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="text-2xl">🔒</div>
+      <h1 class="text-xl font-semibold">xsukax Encrypted File Container</h1>
+      <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">v2.0</span>
+    </div>
+    <div class="flex gap-2">
+      <button id="btnNewContainer" class="btn btn-primary">New Container</button>
+      <button id="btnOpenContainer" class="btn">Open Container</button>
+      <button id="btnCloseContainer" class="btn" style="display:none;">Close</button>
+    </div>
+  </div>
+
+  <div id="welcomeScreen" class="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50">
+    <div class="text-center">
+      <div class="text-6xl mb-6">🔐</div>
+      <h2 class="text-3xl mb-3 font-bold text-gray-800">Encrypted File Container</h2>
+      <p class="text-base mb-8 text-gray-600">ChaCha20-Poly1305 | Zero Trust | Client-Side Encryption</p>
+      <div class="flex gap-3 justify-center">
+        <button onclick="document.getElementById('btnNewContainer').click()" class="btn btn-primary px-6 py-3 text-base">Create New Container</button>
+        <button onclick="document.getElementById('btnOpenContainer').click()" class="btn px-6 py-3 text-base">Open Existing Container</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="containerScreen" style="display:none;" class="flex-1 flex flex-col overflow-hidden">
+    <div class="bg-white border-b border-gray-200 p-3 flex items-center justify-between gap-3">
+      <div class="flex gap-2 items-center flex-wrap">
+        <button id="btnAddFiles" class="btn">➕ Add Files</button>
+        <button id="btnAddFolder" class="btn">📁 Add Folder</button>
+        <button id="btnNewFile" class="btn">📄 New File</button>
+        <button id="btnNewFolder" class="btn">🗂️ New Folder</button>
+        <div class="border-l border-gray-300 h-6 mx-1"></div>
+        <button id="btnEdit" class="btn" disabled>✏️ Edit</button>
+        <button id="btnDelete" class="btn" disabled>🗑️ Delete</button>
+        <button id="btnRename" class="btn" disabled>✍️ Rename</button>
+        <button id="btnDownload" class="btn" disabled>⬇️ Download</button>
+        <div class="border-l border-gray-300 h-6 mx-1"></div>
+        <button id="btnSaveContainer" class="btn btn-primary">💾 Save Container</button>
+      </div>
+      <div class="flex gap-2 items-center">
+        <input type="text" id="searchInput" placeholder="Search files..." class="input-field w-48">
+        <select id="viewMode" class="input-field w-28">
+          <option value="list">📋 List</option>
+          <option value="grid">🔲 Grid</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="breadcrumb" class="breadcrumb"></div>
+
+    <div class="flex-1 bg-white overflow-hidden flex flex-col">
+      <div class="p-3 border-b border-gray-200 flex items-center gap-4 text-sm bg-gray-50">
+        <span class="text-gray-600">Container:</span>
+        <span class="font-semibold text-blue-600" id="containerName">Untitled.mp4</span>
+        <span class="text-gray-600 ml-auto">Files:</span>
+        <span class="font-semibold" id="fileCount">0</span>
+        <span class="text-gray-600 ml-3">Total Size:</span>
+        <span class="font-semibold" id="totalSize">0 B</span>
+      </div>
+      
+      <div id="fileListView" class="flex-1 overflow-auto scrollbar bg-white">
+        <div id="dropzone" class="dropzone">
+          <div class="text-4xl mb-3">📦</div>
+          <div class="text-lg mb-2 font-semibold text-gray-700">Drop files or folders here</div>
+          <div class="text-gray-500 text-sm">or use the toolbar buttons above</div>
+        </div>
+        <div id="fileList" style="display:none;"></div>
+      </div>
+
+      <div id="fileGridView" class="flex-1 overflow-auto scrollbar p-4 grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3 bg-white" style="display:none;"></div>
+    </div>
+
+    <div class="bg-gray-50 border-t border-gray-200 p-2 flex items-center justify-between text-sm">
+      <div id="statusText" class="text-gray-600">Ready</div>
+      <div id="progressContainer" style="display:none;" class="flex items-center gap-3 flex-1 max-w-sm ml-4">
+        <div class="progress-bar flex-1">
+          <div id="progressFill" class="progress-fill" style="width:0%"></div>
+        </div>
+        <span id="progressText" class="text-gray-700 font-medium">0%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="notificationContainer"></div>
+<div id="modalContainer"></div>
+
+<script>
+class ChaCha20 {
+  constructor(key, nonce) {
+    if (key.length !== 32) throw new Error('Key must be 32 bytes');
+    if (nonce.length !== 12) throw new Error('Nonce must be 12 bytes');
+    this.key = new Uint32Array(8);
+    this.nonce = new Uint32Array(3);
+    for (let i = 0; i < 8; i++) {
+      this.key[i] = key[i*4] | (key[i*4+1] << 8) | (key[i*4+2] << 16) | (key[i*4+3] << 24);
+    }
+    for (let i = 0; i < 3; i++) {
+      this.nonce[i] = nonce[i*4] | (nonce[i*4+1] << 8) | (nonce[i*4+2] << 16) | (nonce[i*4+3] << 24);
+    }
+  }
+
+  quarterRound(state, a, b, c, d) {
+    state[a] = (state[a] + state[b]) >>> 0; state[d] = ((state[d] ^ state[a]) << 16 | (state[d] ^ state[a]) >>> 16) >>> 0;
+    state[c] = (state[c] + state[d]) >>> 0; state[b] = ((state[b] ^ state[c]) << 12 | (state[b] ^ state[c]) >>> 20) >>> 0;
+    state[a] = (state[a] + state[b]) >>> 0; state[d] = ((state[d] ^ state[a]) << 8 | (state[d] ^ state[a]) >>> 24) >>> 0;
+    state[c] = (state[c] + state[d]) >>> 0; state[b] = ((state[b] ^ state[c]) << 7 | (state[b] ^ state[c]) >>> 25) >>> 0;
+  }
+
+  block(counter) {
+    const state = new Uint32Array(16);
+    state[0] = 0x61707865; state[1] = 0x3320646e; state[2] = 0x79622d32; state[3] = 0x6b206574;
+    for (let i = 0; i < 8; i++) state[4 + i] = this.key[i];
+    state[12] = counter;
+    state[13] = this.nonce[0]; state[14] = this.nonce[1]; state[15] = this.nonce[2];
+    
+    const working = new Uint32Array(state);
+    for (let i = 0; i < 10; i++) {
+      this.quarterRound(working, 0, 4, 8, 12); this.quarterRound(working, 1, 5, 9, 13);
+      this.quarterRound(working, 2, 6, 10, 14); this.quarterRound(working, 3, 7, 11, 15);
+      this.quarterRound(working, 0, 5, 10, 15); this.quarterRound(working, 1, 6, 11, 12);
+      this.quarterRound(working, 2, 7, 8, 13); this.quarterRound(working, 3, 4, 9, 14);
+    }
+    
+    for (let i = 0; i < 16; i++) working[i] = (working[i] + state[i]) >>> 0;
+    return working;
+  }
+
+  encrypt(plaintext) {
+    const output = new Uint8Array(plaintext.length);
+    let counter = 1;
+    
+    for (let i = 0; i < plaintext.length; i += 64) {
+      const keystream = this.block(counter++);
+      const keystreamBytes = new Uint8Array(keystream.buffer);
+      for (let j = 0; j < 64 && i + j < plaintext.length; j++) {
+        output[i + j] = plaintext[i + j] ^ keystreamBytes[j];
+      }
+    }
+    return output;
+  }
+
+  decrypt(ciphertext) {
+    return this.encrypt(ciphertext);
+  }
+}
+
+class Poly1305 {
+  constructor(key) {
+    if (key.length !== 32) throw new Error('Key must be 32 bytes');
+    this.r = new Uint32Array(5);
+    this.s = new Uint32Array(4);
+    
+    this.r[0] = (key[0] | (key[1] << 8) | (key[2] << 16) | (key[3] << 24)) & 0x0fffffff;
+    this.r[1] = ((key[3] >>> 4) | (key[4] << 4) | (key[5] << 12) | (key[6] << 20)) & 0x0ffffffc;
+    this.r[2] = ((key[6] >>> 2) | (key[7] << 6) | (key[8] << 14) | (key[9] << 22)) & 0x0ffffffc;
+    this.r[3] = ((key[9] >>> 6) | (key[10] << 2) | (key[11] << 10) | (key[12] << 18)) & 0x0ffffffc;
+    this.r[4] = ((key[12] >>> 4) | (key[13] << 4) | (key[14] << 12) | (key[15] << 20)) & 0x0ffffffc;
+    
+    this.s[0] = key[16] | (key[17] << 8) | (key[18] << 16) | (key[19] << 24);
+    this.s[1] = key[20] | (key[21] << 8) | (key[22] << 16) | (key[23] << 24);
+    this.s[2] = key[24] | (key[25] << 8) | (key[26] << 16) | (key[27] << 24);
+    this.s[3] = key[28] | (key[29] << 8) | (key[30] << 16) | (key[31] << 24);
+  }
+
+  mac(data) {
+    const h = new Uint32Array(5);
+    
+    for (let i = 0; i < data.length; i += 16) {
+      const chunk = Math.min(16, data.length - i);
+      const c = new Uint32Array(5);
+      
+      for (let j = 0; j < chunk; j++) {
+        c[j >>> 2] |= data[i + j] << ((j & 3) * 8);
+      }
+      c[chunk >>> 2] |= 1 << ((chunk & 3) * 8);
+      
+      let d0 = h[0] + c[0]; h[0] = d0 & 0x3ffffff;
+      let d1 = h[1] + c[1] + (d0 >>> 26); h[1] = d1 & 0x3ffffff;
+      let d2 = h[2] + c[2] + (d1 >>> 26); h[2] = d2 & 0x3ffffff;
+      let d3 = h[3] + c[3] + (d2 >>> 26); h[3] = d3 & 0x3ffffff;
+      let d4 = h[4] + c[4] + (d3 >>> 26); h[4] = d4 & 0x3ffffff;
+      h[0] += (d4 >>> 26) * 5; h[1] += h[0] >>> 26; h[0] &= 0x3ffffff;
+      
+      this._multiply(h);
+    }
+    
+    h[1] += h[0] >>> 26; h[0] &= 0x3ffffff;
+    h[2] += h[1] >>> 26; h[1] &= 0x3ffffff;
+    h[3] += h[2] >>> 26; h[2] &= 0x3ffffff;
+    h[4] += h[3] >>> 26; h[3] &= 0x3ffffff;
+    h[0] += (h[4] >>> 26) * 5; h[4] &= 0x3ffffff;
+    h[1] += h[0] >>> 26; h[0] &= 0x3ffffff;
+    
+    const g = new Uint32Array(5);
+    g[0] = h[0] + 5; g[1] = h[1] + (g[0] >>> 26); g[0] &= 0x3ffffff;
+    g[2] = h[2] + (g[1] >>> 26); g[1] &= 0x3ffffff;
+    g[3] = h[3] + (g[2] >>> 26); g[2] &= 0x3ffffff;
+    g[4] = h[4] + (g[3] >>> 26) - (1 << 26); g[3] &= 0x3ffffff;
+    
+    const mask = (g[4] >>> 31) - 1;
+    for (let i = 0; i < 5; i++) h[i] = (h[i] & ~mask) | (g[i] & mask);
+    
+    h[0] = ((h[0] | (h[1] << 26)) >>> 0) + this.s[0];
+    h[1] = ((h[1] >>> 6) | (h[2] << 20)) >>> 0;
+    h[2] = ((h[2] >>> 12) | (h[3] << 14)) >>> 0;
+    h[3] = ((h[3] >>> 18) | (h[4] << 8)) >>> 0;
+    
+    h[1] += h[0] >>> 32; h[0] = h[0] >>> 0;
+    h[1] = (h[1] + this.s[1]) >>> 0;
+    h[2] += h[1] >>> 32; h[1] = h[1] >>> 0;
+    h[2] = (h[2] + this.s[2]) >>> 0;
+    h[3] += h[2] >>> 32; h[2] = h[2] >>> 0;
+    h[3] = (h[3] + this.s[3]) >>> 0;
+    
+    const tag = new Uint8Array(16);
+    for (let i = 0; i < 4; i++) {
+      tag[i*4] = h[i] & 0xff;
+      tag[i*4+1] = (h[i] >>> 8) & 0xff;
+      tag[i*4+2] = (h[i] >>> 16) & 0xff;
+      tag[i*4+3] = (h[i] >>> 24) & 0xff;
+    }
+    return tag;
+  }
+
+  _multiply(h) {
+    const hr = [0, 0, 0, 0, 0];
+    for (let i = 0; i < 5; i++) {
+      let c = 0;
+      for (let j = 0; j <= i; j++) {
+        c += h[j] * this.r[i - j];
+      }
+      for (let j = i + 1; j < 5; j++) {
+        c += h[j] * (this.r[i + 5 - j] * 5);
+      }
+      hr[i] = c;
+    }
+    h[0] = hr[0] & 0x3ffffff; h[1] = ((hr[0] >>> 26) + hr[1]) & 0x3ffffff;
+    h[2] = ((hr[1] >>> 26) + hr[2]) & 0x3ffffff; h[3] = ((hr[2] >>> 26) + hr[3]) & 0x3ffffff;
+    h[4] = ((hr[3] >>> 26) + hr[4]) & 0x3ffffff; h[0] += ((hr[4] >>> 26) * 5) & 0x3ffffff;
+    h[1] += h[0] >>> 26; h[0] &= 0x3ffffff;
+  }
+}
+
+class ChaCha20Poly1305 {
+  static async deriveKey(password, salt) {
+    const encoder = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256);
+    return new Uint8Array(bits);
+  }
+
+  static encrypt(key, nonce, plaintext, additionalData = new Uint8Array()) {
+    const chacha = new ChaCha20(key, nonce);
+    const polyKey = chacha.block(0);
+    const polyKeyBytes = new Uint8Array(polyKey.buffer).slice(0, 32);
+    
+    const ciphertext = chacha.encrypt(plaintext);
+    
+    const macData = new Uint8Array(additionalData.length + ciphertext.length + 16);
+    macData.set(additionalData, 0);
+    macData.set(ciphertext, additionalData.length);
+    const adLen = new Uint8Array(8);
+    const ctLen = new Uint8Array(8);
+    new DataView(adLen.buffer).setBigUint64(0, BigInt(additionalData.length), true);
+    new DataView(ctLen.buffer).setBigUint64(0, BigInt(ciphertext.length), true);
+    macData.set(adLen, additionalData.length + ciphertext.length);
+    macData.set(ctLen, additionalData.length + ciphertext.length + 8);
+    
+    const poly = new Poly1305(polyKeyBytes);
+    const tag = poly.mac(macData);
+    
+    return { ciphertext, tag };
+  }
+
+  static decrypt(key, nonce, ciphertext, tag, additionalData = new Uint8Array()) {
+    const chacha = new ChaCha20(key, nonce);
+    const polyKey = chacha.block(0);
+    const polyKeyBytes = new Uint8Array(polyKey.buffer).slice(0, 32);
+    
+    const macData = new Uint8Array(additionalData.length + ciphertext.length + 16);
+    macData.set(additionalData, 0);
+    macData.set(ciphertext, additionalData.length);
+    const adLen = new Uint8Array(8);
+    const ctLen = new Uint8Array(8);
+    new DataView(adLen.buffer).setBigUint64(0, BigInt(additionalData.length), true);
+    new DataView(ctLen.buffer).setBigUint64(0, BigInt(ciphertext.length), true);
+    macData.set(adLen, additionalData.length + ciphertext.length);
+    macData.set(ctLen, additionalData.length + ciphertext.length + 8);
+    
+    const poly = new Poly1305(polyKeyBytes);
+    const computedTag = poly.mac(macData);
+    
+    let tagMatch = true;
+    for (let i = 0; i < 16; i++) {
+      if (computedTag[i] !== tag[i]) tagMatch = false;
+    }
+    if (!tagMatch) throw new Error('Authentication failed');
+    
+    return chacha.decrypt(ciphertext);
+  }
+}
+
+class EncryptedContainer {
+  constructor() {
+    this.entries = new Map();
+    this.key = null;
+    this.containerName = 'Untitled.mp4';
+  }
+
+  async initialize(password) {
+    this.salt = crypto.getRandomValues(new Uint8Array(32));
+    this.key = await ChaCha20Poly1305.deriveKey(password, this.salt);
+  }
+
+  async loadFromFile(file, password, progressCallback) {
+    const buffer = await file.arrayBuffer();
+    const data = new Uint8Array(buffer);
+    
+    if (data[0] !== 0x58 || data[1] !== 0x45 || data[2] !== 0x46 || data[3] !== 0x43) {
+      throw new Error('Invalid container format');
+    }
+    
+    let offset = 4;
+    const version = new DataView(data.buffer).getUint16(offset, true);
+    offset += 2;
+    
+    this.salt = data.slice(offset, offset + 32);
+    offset += 32;
+    
+    if (progressCallback) progressCallback(10);
+    
+    this.key = await ChaCha20Poly1305.deriveKey(password, this.salt);
+    
+    if (progressCallback) progressCallback(20);
+    
+    const metadataNonce = data.slice(offset, offset + 12);
+    offset += 12;
+    
+    const metadataLength = new DataView(data.buffer).getUint32(offset, true);
+    offset += 4;
+    
+    const encryptedMetadata = data.slice(offset, offset + metadataLength);
+    offset += metadataLength;
+    
+    const metadataTag = data.slice(offset, offset + 16);
+    offset += 16;
+    
+    const metadataBytes = ChaCha20Poly1305.decrypt(this.key, metadataNonce, encryptedMetadata, metadataTag);
+    const metadata = JSON.parse(new TextDecoder().decode(metadataBytes));
+    
+    if (progressCallback) progressCallback(30);
+    
+    this.entries.clear();
+    const totalEntries = metadata.entries.length;
+    const fileEntries = metadata.entries.filter(e => !e.isFolder);
+    let processedFiles = 0;
+    
+    for (const entry of metadata.entries) {
+      if (entry.isFolder) {
+        this.entries.set(entry.id, {
+          id: entry.id,
+          name: entry.name,
+          path: entry.path,
+          isFolder: true,
+          modified: new Date(entry.modified)
+        });
+      } else {
+        const fileNonce = data.slice(offset, offset + 12);
+        offset += 12;
+        
+        const fileDataLength = new DataView(data.buffer).getUint32(offset, true);
+        offset += 4;
+        
+        const encryptedFileData = data.slice(offset, offset + fileDataLength);
+        offset += fileDataLength;
+        
+        const fileTag = data.slice(offset, offset + 16);
+        offset += 16;
+        
+        const fileData = ChaCha20Poly1305.decrypt(this.key, fileNonce, encryptedFileData, fileTag);
+        
+        this.entries.set(entry.id, {
+          id: entry.id,
+          name: entry.name,
+          path: entry.path,
+          size: entry.size,
+          type: entry.type,
+          data: fileData,
+          isFolder: false,
+          modified: new Date(entry.modified)
+        });
+        
+        processedFiles++;
+        if (progressCallback && fileEntries.length > 0) {
+          const progress = 30 + Math.floor((processedFiles / fileEntries.length) * 70);
+          progressCallback(progress);
+        }
+      }
+    }
+    
+    this.containerName = file.name;
+  }
+
+  async serialize() {
+    const metadata = {
+      version: 1,
+      entries: Array.from(this.entries.values()).map(e => {
+        if (e.isFolder) {
+          return { id: e.id, name: e.name, path: e.path, isFolder: true, modified: e.modified.toISOString() };
+        }
+        return { id: e.id, name: e.name, path: e.path, size: e.size, type: e.type, isFolder: false, modified: e.modified.toISOString() };
+      })
+    };
+    
+    const metadataBytes = new TextEncoder().encode(JSON.stringify(metadata));
+    const metadataNonce = crypto.getRandomValues(new Uint8Array(12));
+    const { ciphertext: encMetadata, tag: metadataTag } = ChaCha20Poly1305.encrypt(this.key, metadataNonce, metadataBytes);
+    
+    let totalSize = 4 + 2 + 32 + 12 + 4 + encMetadata.length + 16;
+    for (const entry of this.entries.values()) {
+      if (!entry.isFolder) {
+        totalSize += 12 + 4 + entry.data.length + 16;
+      }
+    }
+    
+    const container = new Uint8Array(totalSize);
+    let offset = 0;
+    
+    container[0] = 0x58; container[1] = 0x45; container[2] = 0x46; container[3] = 0x43;
+    offset += 4;
+    
+    new DataView(container.buffer).setUint16(offset, 1, true);
+    offset += 2;
+    
+    container.set(this.salt, offset);
+    offset += 32;
+    
+    container.set(metadataNonce, offset);
+    offset += 12;
+    
+    new DataView(container.buffer).setUint32(offset, encMetadata.length, true);
+    offset += 4;
+    
+    container.set(encMetadata, offset);
+    offset += encMetadata.length;
+    
+    container.set(metadataTag, offset);
+    offset += 16;
+    
+    for (const entry of this.entries.values()) {
+      if (!entry.isFolder) {
+        const fileNonce = crypto.getRandomValues(new Uint8Array(12));
+        const { ciphertext: encFile, tag: fileTag } = ChaCha20Poly1305.encrypt(this.key, fileNonce, entry.data);
+        
+        container.set(fileNonce, offset);
+        offset += 12;
+        
+        new DataView(container.buffer).setUint32(offset, encFile.length, true);
+        offset += 4;
+        
+        container.set(encFile, offset);
+        offset += encFile.length;
+        
+        container.set(fileTag, offset);
+        offset += 16;
+      }
+    }
+    
+    return container;
+  }
+
+  addEntry(entry) {
+    this.entries.set(entry.id, entry);
+  }
+
+  deleteEntry(id) {
+    const entry = this.entries.get(id);
+    if (entry && entry.isFolder) {
+      for (const [eid, e] of this.entries) {
+        if (e.path.startsWith(entry.path + '/')) {
+          this.entries.delete(eid);
+        }
+      }
+    }
+    this.entries.delete(id);
+  }
+
+  renameEntry(id, newName) {
+    const entry = this.entries.get(id);
+    if (entry) {
+      const oldPath = entry.path;
+      const newPath = this.getParentPath(oldPath) + (this.getParentPath(oldPath) ? '/' : '') + newName;
+      entry.name = newName;
+      entry.path = newPath;
+      entry.modified = new Date();
+      
+      if (entry.isFolder) {
+        for (const e of this.entries.values()) {
+          if (e.path.startsWith(oldPath + '/')) {
+            e.path = newPath + e.path.substring(oldPath.length);
+          }
+        }
+      }
+    }
+  }
+
+  getEntry(id) {
+    return this.entries.get(id);
+  }
+
+  getAllEntries() {
+    return Array.from(this.entries.values());
+  }
+
+  getEntriesInPath(path) {
+    return this.getAllEntries().filter(e => {
+      const parentPath = this.getParentPath(e.path);
+      return parentPath === path;
+    });
+  }
+
+  getParentPath(path) {
+    const lastSlash = path.lastIndexOf('/');
+    return lastSlash === -1 ? '' : path.substring(0, lastSlash);
+  }
+
+  generateId() {
+    return crypto.randomUUID();
+  }
+
+  getTotalSize() {
+    let total = 0;
+    for (const entry of this.entries.values()) {
+      if (!entry.isFolder) total += entry.size;
+    }
+    return total;
+  }
+}
+
+class App {
+  constructor() {
+    this.container = null;
+    this.selectedIds = new Set();
+    this.viewMode = 'list';
+    this.searchQuery = '';
+    this.currentPath = '';
+    this.init();
+  }
+
+  init() {
+    document.getElementById('btnNewContainer').onclick = () => this.createNewContainer();
+    document.getElementById('btnOpenContainer').onclick = () => this.openContainer();
+    document.getElementById('btnCloseContainer').onclick = () => this.closeContainer();
+    document.getElementById('btnAddFiles').onclick = () => this.addFiles();
+    document.getElementById('btnAddFolder').onclick = () => this.addFolder();
+    document.getElementById('btnNewFile').onclick = () => this.createNewFile();
+    document.getElementById('btnNewFolder').onclick = () => this.createNewFolder();
+    document.getElementById('btnEdit').onclick = () => this.editSelected();
+    document.getElementById('btnDelete').onclick = () => this.deleteSelected();
+    document.getElementById('btnRename').onclick = () => this.renameSelected();
+    document.getElementById('btnDownload').onclick = () => this.downloadSelected();
+    document.getElementById('btnSaveContainer').onclick = () => this.saveContainer();
+    
+    document.getElementById('searchInput').oninput = (e) => {
+      this.searchQuery = e.target.value.toLowerCase();
+      this.renderEntries();
+    };
+    
+    document.getElementById('viewMode').onchange = (e) => {
+      this.viewMode = e.target.value;
+      this.renderEntries();
+    };
+    
+    const dropzone = document.getElementById('dropzone');
+    const fileListView = document.getElementById('fileListView');
+    
+    [dropzone, fileListView].forEach(el => {
+      el.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('dragover'); };
+      el.ondragleave = (e) => { if (e.target === el) dropzone.classList.remove('dragover'); };
+      el.ondrop = (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        this.handleDrop(e.dataTransfer.items);
+      };
+    });
+  }
+
+  async createNewContainer() {
+    const password = await this.showPasswordModal('Create New Container', 'Enter a strong encryption password:');
+    if (!password) return;
+    
+    const confirmPassword = await this.showPasswordModal('Confirm Password', 'Re-enter your password:');
+    if (password !== confirmPassword) {
+      this.showNotification('Passwords do not match', 'error');
+      return;
+    }
+    
+    this.showProgress('Creating container...');
+    
+    setTimeout(async () => {
+      try {
+        this.container = new EncryptedContainer();
+        await this.container.initialize(password);
+        this.currentPath = '';
+        this.showContainerView();
+        this.showNotification('Container created successfully', 'success');
+      } catch (error) {
+        this.showNotification('Failed: ' + error.message, 'error');
+      } finally {
+        this.hideProgress();
+      }
+    }, 100);
+  }
+
+  async openContainer() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.mp4';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const password = await this.showPasswordModal('Open Container', 'Enter the container password:');
+      if (!password) return;
+      
+      this.showContainerView();
+      document.getElementById('fileListView').style.display = 'none';
+      document.getElementById('fileGridView').style.display = 'none';
+      
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      this.showProgress('Decrypting container...');
+      
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      try {
+        this.container = new EncryptedContainer();
+        await this.container.loadFromFile(file, password, (progress) => {
+          this.updateProgress(progress);
+        });
+        this.currentPath = '';
+        this.renderEntries();
+        this.showNotification('Container opened successfully', 'success');
+      } catch (error) {
+        this.showNotification('Failed: ' + error.message, 'error');
+        this.container = null;
+        this.showWelcomeView();
+      } finally {
+        this.hideProgress();
+      }
+    };
+    input.click();
+  }
+
+  closeContainer() {
+    this.container = null;
+    this.selectedIds.clear();
+    this.currentPath = '';
+    this.showWelcomeView();
+  }
+
+  async addFiles() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.onchange = async (e) => {
+      await this.handleFiles(Array.from(e.target.files));
+    };
+    input.click();
+  }
+
+  async addFolder() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.webkitdirectory = true;
+    input.onchange = async (e) => {
+      const files = Array.from(e.target.files);
+      files.forEach(f => {
+        if (f.webkitRelativePath) {
+          f.fullPath = f.webkitRelativePath;
+        }
+      });
+      await this.handleFiles(files);
+    };
+    input.click();
+  }
+
+  async handleDrop(items) {
+    if (!this.container) return;
+    const files = [];
+    
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === 'file') {
+        const entry = item.webkitGetAsEntry();
+        if (entry) {
+          await this.traverseEntry(entry, '', files);
+        }
+      }
+    }
+    
+    await this.handleFiles(files);
+  }
+
+  async traverseEntry(entry, path, files) {
+    if (entry.isFile) {
+      const file = await new Promise((resolve) => entry.file(resolve));
+      file.fullPath = path + file.name;
+      files.push(file);
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const entries = await new Promise((resolve) => reader.readEntries(resolve));
+      for (const e of entries) {
+        await this.traverseEntry(e, path + entry.name + '/', files);
+      }
+    }
+  }
+
+  async handleFiles(files) {
+    if (!this.container) return;
+    
+    this.showProgress('Adding files...');
+    let added = 0;
+    
+    const foldersToCreate = new Set();
+    
+    for (const file of files) {
+      const relativePath = file.fullPath || file.webkitRelativePath || file.name;
+      const parts = relativePath.split('/').filter(p => p);
+      
+      for (let i = 0; i < parts.length - 1; i++) {
+        const folderParts = parts.slice(0, i + 1);
+        const folderPath = this.currentPath + (this.currentPath ? '/' : '') + folderParts.join('/');
+        foldersToCreate.add(folderPath);
+      }
+    }
+    
+    for (const folderPath of Array.from(foldersToCreate).sort()) {
+      const existing = this.container.getAllEntries().find(e => e.path === folderPath);
+      if (!existing) {
+        const folderName = folderPath.split('/').pop();
+        this.container.addEntry({
+          id: this.container.generateId(),
+          name: folderName,
+          path: folderPath,
+          isFolder: true,
+          modified: new Date()
+        });
+      }
+    }
+    
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const file = files[i];
+        const relativePath = file.fullPath || file.webkitRelativePath || file.name;
+        const fileName = relativePath.split('/').pop();
+        const filePath = this.currentPath + (this.currentPath ? '/' : '') + relativePath;
+        const data = new Uint8Array(await file.arrayBuffer());
+        
+        this.container.addEntry({
+          id: this.container.generateId(),
+          name: fileName,
+          path: filePath,
+          size: file.size,
+          type: file.type || 'application/octet-stream',
+          data: data,
+          isFolder: false,
+          modified: new Date()
+        });
+        
+        added++;
+        this.updateProgress(((i + 1) / files.length) * 100);
+      } catch (error) {
+        console.error('Failed to add file:', error);
+      }
+    }
+    
+    this.hideProgress();
+    this.renderEntries();
+    this.showNotification(`Added ${added} file(s)`, 'success');
+  }
+
+  async createNewFile() {
+    const name = await this.showInputModal('New File', 'Enter file name:', 'newfile.txt');
+    if (!name) return;
+    
+    const path = this.currentPath + (this.currentPath ? '/' : '') + name;
+    const existing = this.container.getAllEntries().find(e => e.path === path);
+    if (existing) {
+      this.showNotification('File already exists', 'error');
+      return;
+    }
+    
+    this.container.addEntry({
+      id: this.container.generateId(),
+      name: name,
+      path: path,
+      size: 0,
+      type: 'text/plain',
+      data: new Uint8Array(),
+      isFolder: false,
+      modified: new Date()
+    });
+    
+    this.renderEntries();
+    this.showNotification('File created', 'success');
+  }
+
+  async createNewFolder() {
+    const name = await this.showInputModal('New Folder', 'Enter folder name:', 'New Folder');
+    if (!name) return;
+    
+    const path = this.currentPath + (this.currentPath ? '/' : '') + name;
+    const existing = this.container.getAllEntries().find(e => e.path === path);
+    if (existing) {
+      this.showNotification('Folder already exists', 'error');
+      return;
+    }
+    
+    this.container.addEntry({
+      id: this.container.generateId(),
+      name: name,
+      path: path,
+      isFolder: true,
+      modified: new Date()
+    });
+    
+    this.renderEntries();
+    this.showNotification('Folder created', 'success');
+  }
+
+  async editSelected() {
+    if (this.selectedIds.size !== 1) return;
+    
+    const id = Array.from(this.selectedIds)[0];
+    const entry = this.container.getEntry(id);
+    if (!entry || entry.isFolder) return;
+    
+    const textTypes = ['text/', 'application/json', 'application/javascript', 'application/xml'];
+    const textExtensions = /\.(txt|md|json|js|jsx|ts|tsx|css|scss|sass|less|html|htm|xml|svg|csv|log|ini|conf|config|yaml|yml|toml|sh|bash|zsh|bat|cmd|ps1|py|rb|php|java|c|cpp|h|hpp|cs|go|rs|swift|kt|kts|sql|r|m|pl|lua|vim|env|gitignore|dockerfile|makefile|cmake|gradle|properties|diff|patch)$/i;
+    
+    const isText = textTypes.some(t => entry.type.startsWith(t)) || textExtensions.test(entry.name);
+    
+    if (!isText) {
+      this.showNotification('Cannot edit binary files', 'error');
+      return;
+    }
+    
+    const content = new TextDecoder().decode(entry.data);
+    const newContent = await this.showTextEditor(entry.name, content);
+    
+    if (newContent !== null && newContent !== content) {
+      entry.data = new TextEncoder().encode(newContent);
+      entry.size = entry.data.length;
+      entry.modified = new Date();
+      this.renderEntries();
+      this.showNotification('File saved', 'success');
+    }
+  }
+
+  deleteSelected() {
+    if (this.selectedIds.size === 0) return;
+    
+    this.showConfirmModal('Delete Items', `Are you sure you want to delete ${this.selectedIds.size} item(s)?`, (confirmed) => {
+      if (confirmed) {
+        for (const id of this.selectedIds) {
+          this.container.deleteEntry(id);
+        }
+        this.selectedIds.clear();
+        this.renderEntries();
+        this.showNotification('Items deleted', 'success');
+      }
+    });
+  }
+
+  async renameSelected() {
+    if (this.selectedIds.size !== 1) return;
+    
+    const id = Array.from(this.selectedIds)[0];
+    const entry = this.container.getEntry(id);
+    
+    const newName = await this.showInputModal('Rename', 'Enter new name:', entry.name);
+    if (newName && newName !== entry.name) {
+      this.container.renameEntry(id, newName);
+      this.renderEntries();
+      this.showNotification('Item renamed', 'success');
+    }
+  }
+
+  downloadSelected() {
+    for (const id of this.selectedIds) {
+      const entry = this.container.getEntry(id);
+      if (!entry.isFolder) {
+        const blob = new Blob([entry.data], { type: entry.type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = entry.name;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    }
+    this.showNotification('Download started', 'success');
+  }
+
+  async saveContainer() {
+    if (!this.container) return;
+    
+    this.showProgress('Saving container...');
+    
+    setTimeout(async () => {
+      try {
+        const data = await this.container.serialize();
+        const blob = new Blob([data], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = this.container.containerName;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.showNotification('Container saved successfully', 'success');
+      } catch (error) {
+        this.showNotification('Failed: ' + error.message, 'error');
+      } finally {
+        this.hideProgress();
+      }
+    }, 100);
+  }
+
+  renderBreadcrumb() {
+    const parts = this.currentPath ? this.currentPath.split('/') : [];
+    const breadcrumb = document.getElementById('breadcrumb');
+    
+    if (this.searchQuery) {
+      breadcrumb.innerHTML = '<span class="text-gray-700">🔍 Search results for: <strong>' + this.searchQuery + '</strong></span> <button id="clearSearch" class="ml-3 text-blue-600 hover:underline text-sm">Clear</button>';
+      document.getElementById('clearSearch').onclick = () => {
+        this.searchQuery = '';
+        document.getElementById('searchInput').value = '';
+        this.renderEntries();
+      };
+      return;
+    }
+    
+    let html = '<span class="breadcrumb-item' + (!this.currentPath ? ' active' : '') + '" data-path="">🏠 Root</span>';
+    
+    let path = '';
+    for (let i = 0; i < parts.length; i++) {
+      path += (i > 0 ? '/' : '') + parts[i];
+      const isLast = i === parts.length - 1;
+      html += ' <span class="text-gray-400">/</span> <span class="breadcrumb-item' + (isLast ? ' active' : '') + '" data-path="' + path + '">' + parts[i] + '</span>';
+    }
+    
+    breadcrumb.innerHTML = html;
+    
+    breadcrumb.querySelectorAll('.breadcrumb-item').forEach(item => {
+      item.onclick = () => {
+        this.currentPath = item.dataset.path;
+        this.selectedIds.clear();
+        this.renderEntries();
+      };
+    });
+  }
+
+  renderEntries() {
+    if (!this.container) return;
+    
+    this.renderBreadcrumb();
+    
+    let entries;
+    if (this.searchQuery) {
+      entries = this.container.getAllEntries().filter(e => 
+        e.name.toLowerCase().includes(this.searchQuery) ||
+        e.path.toLowerCase().includes(this.searchQuery)
+      );
+    } else {
+      entries = this.container.getEntriesInPath(this.currentPath);
+    }
+    
+    entries.sort((a, b) => {
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+      return a.name.localeCompare(b.name);
+    });
+    
+    const fileCount = this.container.getAllEntries().filter(e => !e.isFolder).length;
+    document.getElementById('fileCount').textContent = fileCount;
+    document.getElementById('totalSize').textContent = this.formatSize(this.container.getTotalSize());
+    document.getElementById('containerName').textContent = this.container.containerName;
+    
+    if (entries.length === 0) {
+      if (this.searchQuery) {
+        document.getElementById('dropzone').style.display = 'block';
+        document.getElementById('dropzone').innerHTML = `
+          <div class="text-4xl mb-3">🔍</div>
+          <div class="text-lg mb-2 font-semibold text-gray-700">No results found</div>
+          <div class="text-gray-500 text-sm">Try a different search term</div>
+        `;
+        document.getElementById('fileList').style.display = 'none';
+        document.getElementById('fileListView').style.display = 'block';
+        document.getElementById('fileGridView').style.display = 'none';
+      } else {
+        document.getElementById('dropzone').style.display = 'block';
+        document.getElementById('dropzone').innerHTML = `
+          <div class="text-4xl mb-3">📦</div>
+          <div class="text-lg mb-2 font-semibold text-gray-700">Drop files or folders here</div>
+          <div class="text-gray-500 text-sm">or use the toolbar buttons above</div>
+        `;
+        document.getElementById('fileList').style.display = 'none';
+        document.getElementById('fileListView').style.display = 'block';
+        document.getElementById('fileGridView').style.display = 'none';
+      }
+      return;
+    }
+    
+    document.getElementById('dropzone').style.display = 'none';
+    
+    if (this.viewMode === 'list') {
+      this.renderListView(entries);
+    } else {
+      this.renderGridView(entries);
+    }
+    
+    this.updateButtons();
+  }
+
+  renderListView(entries) {
+    document.getElementById('fileListView').style.display = 'block';
+    document.getElementById('fileGridView').style.display = 'none';
+    document.getElementById('fileList').style.display = 'block';
+    
+    const fileList = document.getElementById('fileList');
+    fileList.innerHTML = entries.map(entry => {
+      const isSelected = this.selectedIds.has(entry.id);
+      const icon = entry.isFolder ? '📁' : this.getFileIcon(entry.type, entry.name);
+      const size = entry.isFolder ? '' : this.formatSize(entry.size);
+      const className = 'file-item' + (entry.isFolder ? ' folder-item' : '') + (isSelected ? ' selected' : '');
+      
+      const displayName = this.searchQuery ? entry.path : entry.name;
+      
+      return `
+        <div class="${className}" data-id="${entry.id}" data-folder="${entry.isFolder}">
+          <span style="font-size:18px;">${icon}</span>
+          <span class="flex-1">${displayName}</span>
+          <span class="text-gray-500 text-sm">${size}</span>
+          <span class="text-gray-500 text-sm ml-4">${entry.modified.toLocaleString()}</span>
+        </div>
+      `;
+    }).join('');
+    
+    fileList.querySelectorAll('.file-item').forEach(item => {
+      item.onclick = (e) => {
+        if (item.dataset.folder === 'true' && !e.ctrlKey && !e.metaKey && !this.searchQuery) {
+          this.currentPath = this.container.getEntry(item.dataset.id).path;
+          this.selectedIds.clear();
+          this.renderEntries();
+        } else {
+          this.toggleSelection(item.dataset.id, e.ctrlKey || e.metaKey);
+        }
+      };
+      item.ondblclick = () => {
+        const entry = this.container.getEntry(item.dataset.id);
+        if (entry.isFolder) {
+          this.searchQuery = '';
+          document.getElementById('searchInput').value = '';
+          this.currentPath = entry.path;
+          this.selectedIds.clear();
+          this.renderEntries();
+        } else {
+          this.downloadSelected();
+        }
+      };
+    });
+  }
+
+  renderGridView(entries) {
+    document.getElementById('fileListView').style.display = 'none';
+    document.getElementById('fileGridView').style.display = 'grid';
+    
+    const fileGrid = document.getElementById('fileGridView');
+    fileGrid.innerHTML = entries.map(entry => {
+      const isSelected = this.selectedIds.has(entry.id);
+      const thumbnail = this.getThumbnail(entry);
+      const displayName = this.searchQuery ? entry.path : entry.name;
+      return `
+        <div class="grid-item ${isSelected ? 'selected' : ''}" data-id="${entry.id}" data-folder="${entry.isFolder}">
+          ${thumbnail}
+          <div class="text-xs text-center truncate w-full" title="${displayName}">${displayName}</div>
+          ${entry.isFolder ? '' : '<div class="text-xs text-gray-500">' + this.formatSize(entry.size) + '</div>'}
+        </div>
+      `;
+    }).join('');
+    
+    fileGrid.querySelectorAll('.grid-item').forEach(item => {
+      item.onclick = (e) => {
+        if (item.dataset.folder === 'true' && !e.ctrlKey && !e.metaKey && !this.searchQuery) {
+          this.currentPath = this.container.getEntry(item.dataset.id).path;
+          this.selectedIds.clear();
+          this.renderEntries();
+        } else {
+          this.toggleSelection(item.dataset.id, e.ctrlKey || e.metaKey);
+        }
+      };
+      item.ondblclick = () => {
+        const entry = this.container.getEntry(item.dataset.id);
+        if (entry.isFolder) {
+          this.searchQuery = '';
+          document.getElementById('searchInput').value = '';
+          this.currentPath = entry.path;
+          this.selectedIds.clear();
+          this.renderEntries();
+        } else {
+          this.downloadSelected();
+        }
+      };
+    });
+  }
+
+  getThumbnail(entry) {
+    if (entry.isFolder) {
+      return '<div class="grid-thumbnail flex items-center justify-center text-4xl">📁</div>';
+    }
+    if (entry.type.startsWith('image/')) {
+      const blob = new Blob([entry.data], { type: entry.type });
+      const url = URL.createObjectURL(blob);
+      return `<img src="${url}" class="grid-thumbnail" onload="URL.revokeObjectURL(this.src)">`;
+    }
+    return `<div class="grid-thumbnail flex items-center justify-center text-4xl">${this.getFileIcon(entry.type, entry.name)}</div>`;
+  }
+
+  getFileIcon(type, name) {
+    const ext = name.split('.').pop().toLowerCase();
+    
+    if (type.startsWith('image/')) return '🖼️';
+    if (type.startsWith('video/')) return '🎬';
+    if (type.startsWith('audio/')) return '🎵';
+    if (type.includes('pdf')) return '📕';
+    if (type.includes('zip') || type.includes('rar') || type.includes('tar') || type.includes('gz')) return '📦';
+    
+    if (['js', 'jsx', 'ts', 'tsx'].includes(ext)) return '📜';
+    if (['py', 'pyc'].includes(ext)) return '🐍';
+    if (['java', 'class', 'jar'].includes(ext)) return '☕';
+    if (['html', 'htm'].includes(ext)) return '🌐';
+    if (['css', 'scss', 'sass', 'less'].includes(ext)) return '🎨';
+    if (['json', 'xml', 'yaml', 'yml', 'toml'].includes(ext)) return '⚙️';
+    if (['md', 'markdown'].includes(ext)) return '📝';
+    if (['sh', 'bash', 'zsh', 'bat', 'cmd', 'ps1'].includes(ext)) return '⚡';
+    if (['sql', 'db', 'sqlite'].includes(ext)) return '🗄️';
+    if (['c', 'cpp', 'h', 'hpp', 'cs', 'go', 'rs', 'swift', 'kt'].includes(ext)) return '⚙️';
+    if (['txt', 'log'].includes(ext)) return '📄';
+    
+    return '📄';
+  }
+
+  toggleSelection(id, multiSelect) {
+    if (!multiSelect) {
+      this.selectedIds.clear();
+    }
+    
+    if (this.selectedIds.has(id)) {
+      this.selectedIds.delete(id);
+    } else {
+      this.selectedIds.add(id);
+    }
+    
+    this.renderEntries();
+  }
+
+  updateButtons() {
+    const hasSelection = this.selectedIds.size > 0;
+    const singleSelection = this.selectedIds.size === 1;
+    const singleFile = singleSelection && !this.container.getEntry(Array.from(this.selectedIds)[0]).isFolder;
+    
+    document.getElementById('btnEdit').disabled = !singleFile;
+    document.getElementById('btnDelete').disabled = !hasSelection;
+    document.getElementById('btnRename').disabled = !singleSelection;
+    document.getElementById('btnDownload').disabled = !hasSelection;
+  }
+
+  showWelcomeView() {
+    document.getElementById('welcomeScreen').style.display = 'flex';
+    document.getElementById('containerScreen').style.display = 'none';
+    document.getElementById('btnCloseContainer').style.display = 'none';
+  }
+
+  showContainerView() {
+    document.getElementById('welcomeScreen').style.display = 'none';
+    document.getElementById('containerScreen').style.display = 'flex';
+    document.getElementById('btnCloseContainer').style.display = 'block';
+  }
+
+  showProgress(message) {
+    document.getElementById('statusText').textContent = message;
+    document.getElementById('progressContainer').style.display = 'flex';
+    this.updateProgress(0);
+  }
+
+  updateProgress(percent) {
+    document.getElementById('progressFill').style.width = percent + '%';
+    document.getElementById('progressText').textContent = Math.round(percent) + '%';
+  }
+
+  hideProgress() {
+    document.getElementById('progressContainer').style.display = 'none';
+    document.getElementById('statusText').textContent = 'Ready';
+  }
+
+  showNotification(message, type = 'info') {
+    const container = document.getElementById('notificationContainer');
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    
+    const styles = {
+      success: 'border-green-500 bg-green-50',
+      error: 'border-red-500 bg-red-50',
+      info: 'border-blue-500 bg-blue-50',
+      warning: 'border-yellow-500 bg-yellow-50'
+    };
+    
+    const icons = {
+      success: '✅',
+      error: '❌',
+      info: 'ℹ️',
+      warning: '⚠️'
+    };
+    
+    notification.className = 'notification ' + styles[type];
+    notification.innerHTML = `<div class="flex items-center gap-2"><span>${icons[type]}</span><span>${message}</span></div>`;
+    
+    container.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('closing');
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
+  }
+
+  showPasswordModal(title, message) {
+    return new Promise((resolve) => {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <div class="p-4 border-b border-gray-200">
+            <h3 class="text-base font-semibold">${title}</h3>
+          </div>
+          <div class="p-4">
+            <p class="mb-3 text-gray-600 text-sm">${message}</p>
+            <input type="password" id="modalPassword" class="input-field" placeholder="Enter password">
+          </div>
+          <div class="p-4 border-t border-gray-200 flex justify-end gap-2">
+            <button id="modalCancel" class="btn">Cancel</button>
+            <button id="modalConfirm" class="btn btn-primary">Confirm</button>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('modalContainer').appendChild(modal);
+      
+      const passwordInput = modal.querySelector('#modalPassword');
+      passwordInput.focus();
+      
+      modal.querySelector('#modalConfirm').onclick = () => {
+        const password = passwordInput.value;
+        modal.remove();
+        resolve(password);
+      };
+      
+      modal.querySelector('#modalCancel').onclick = () => {
+        modal.remove();
+        resolve(null);
+      };
+      
+      passwordInput.onkeypress = (e) => {
+        if (e.key === 'Enter') modal.querySelector('#modalConfirm').click();
+      };
+    });
+  }
+
+  showInputModal(title, message, defaultValue = '') {
+    return new Promise((resolve) => {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <div class="p-4 border-b border-gray-200">
+            <h3 class="text-base font-semibold">${title}</h3>
+          </div>
+          <div class="p-4">
+            <p class="mb-3 text-gray-600 text-sm">${message}</p>
+            <input type="text" id="modalInput" class="input-field" value="${defaultValue}">
+          </div>
+          <div class="p-4 border-t border-gray-200 flex justify-end gap-2">
+            <button id="modalCancel" class="btn">Cancel</button>
+            <button id="modalConfirm" class="btn btn-primary">Confirm</button>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('modalContainer').appendChild(modal);
+      
+      const input = modal.querySelector('#modalInput');
+      input.focus();
+      input.select();
+      
+      modal.querySelector('#modalConfirm').onclick = () => {
+        const value = input.value;
+        modal.remove();
+        resolve(value);
+      };
+      
+      modal.querySelector('#modalCancel').onclick = () => {
+        modal.remove();
+        resolve(null);
+      };
+      
+      input.onkeypress = (e) => {
+        if (e.key === 'Enter') modal.querySelector('#modalConfirm').click();
+      };
+    });
+  }
+
+  showConfirmModal(title, message, callback) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="p-4 border-b border-gray-200">
+          <h3 class="text-base font-semibold">${title}</h3>
+        </div>
+        <div class="p-4">
+          <p class="text-gray-600 text-sm">${message}</p>
+        </div>
+        <div class="p-4 border-t border-gray-200 flex justify-end gap-2">
+          <button id="modalCancel" class="btn">Cancel</button>
+          <button id="modalConfirm" class="btn btn-primary">Confirm</button>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById('modalContainer').appendChild(modal);
+    
+    modal.querySelector('#modalConfirm').onclick = () => {
+      modal.remove();
+      callback(true);
+    };
+    
+    modal.querySelector('#modalCancel').onclick = () => {
+      modal.remove();
+      callback(false);
+    };
+  }
+
+  showTextEditor(fileName, content) {
+    return new Promise((resolve) => {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content modal-editor">
+          <div class="p-3 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-sm font-semibold">Edit: ${fileName}</h3>
+            <div class="flex gap-2">
+              <button id="editorSave" class="btn btn-primary">💾 Save</button>
+              <button id="editorCancel" class="btn">Cancel</button>
+            </div>
+          </div>
+          <div class="flex-1 overflow-hidden">
+            <textarea id="editorContent" class="textarea-field h-full w-full"></textarea>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('modalContainer').appendChild(modal);
+      
+      const textarea = modal.querySelector('#editorContent');
+      textarea.value = content;
+      textarea.focus();
+      
+      modal.querySelector('#editorSave').onclick = () => {
+        const value = textarea.value;
+        modal.remove();
+        resolve(value);
+      };
+      
+      modal.querySelector('#editorCancel').onclick = () => {
+        modal.remove();
+        resolve(null);
+      };
+    });
+  }
+
+  formatSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+}
+
+const app = new App();
+</script>
+</body>
+</html>
